@@ -1,0 +1,122 @@
+---
+title: "Final Project"
+author: "Alexander B. & Abby A."
+date: "12/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+Russia <-cbind(Russia.Equipment, Russia.Personnel)
+Russia
+summary(Russia)
+```
+```{r}
+library(ggplot2)
+R1 <- plot(Russia$day, Russia$personnel)
+R1
+R2 <- plot(Russia$day, Russia$tank)
+R2
+
+qplot(Russia$day, Russia$personnel)+ xlab("Days") + ylab("Personnel")
+
+qplot(Russia$day, Russia$PBD)+ xlab("Days") + ylab("Deaths")
+
+qplot(Russia$day, Russia$TPB)+ xlab("Days") + ylab("Tank Loss")
+```
+
+```{r}
+ggplot(Russia_Overall_2, aes(x=Type, y=Total)) + geom_col()
+
+```
+
+
+```{r}
+library(rvest)
+html <- read_html("https://armedforces.eu/Russia#:~:text=Nowadays%2C%20similarly%20to%20United%20States%2C%20the%20Russians%20store,in%20case%20of%20Americans%2C%20namely%201600%20deployed%20warheads.")
+
+Cat <- html %>%
+  html_elements(".meter-text") %>%
+  html_text2()
+Cat
+```
+
+
+
+```{r}
+Total <- html %>%
+  html_elements(".meter-text-value") %>%
+  html_text2()
+Total
+```
+
+```{r}
+Overall <- cbind(Cat, Total)
+Overall
+
+```
+```{r}
+summary(Total)
+
+```
+
+
+
+#that data is added, now we are adding U.S. data
+
+```{r}
+html2 <- read_html("https://en.wikipedia.org/wiki/United_States_military_casualties_of_war")
+html2
+```
+
+
+
+```{r}
+US <- html2 %>%
+  html_elements(".jquery-tablesorter:nth-child(11) td:nth-child(4) , .jquery-tablesorter:nth-child(11) .headerSort:nth-child(4) , .jquery-tablesorter:nth-child(11) td:nth-child(1) , .jquery-tablesorter:nth-child(11) .headerSort:nth-child(2)") %>%
+  html_text2()
+US
+#come back to this
+```
+
+
+```{r}
+library(gtrendsR)
+	
+res <- gtrends(c("Putin lzhets", "Zelenskyy lzhets"), geo = "RU", time = "2022-02-25 2022-12-01")
+plot(res)
+res2 <- gtrends(c("", ""), geo = "UA", time = "2022-02-25 2022-12-01")
+plot(res2)
+
+```
+```{r}
+res3 <- gtrends(c("retreat", "surrender"), geo = "RU", time = "2022-02-25 2022-12-01")
+plot(res3)
+
+res4 <- gtrends(c("ukraine", "ukraine deaths"), geo = "RU", time = "2022-02-25 2022-12-01")
+plot(res4)
+```
+
+```{r}
+ggplot(Russia.Personnel, aes(x = day, y = value)) +
+  geom_tile(fill = "DOW") +
+  scale_fill_viridis(name = "PBD")
+
+
+
+```
+
+
+```{r}
+library(tidyr)
+my_data_long <- pivot_longer(Russia_Overall_2, cols = c(D281, Total),
+  names_to=c("var","val"),
+  names_sep="_")
+
+ggplot(Russia_Overall_2, aes(x = Type, y = D281)) +
+  geom_tile(aes(fill = "Dark Blue"))
+
+```
