@@ -1,0 +1,137 @@
+---
+title: "The War Between Russia and Ukraine and the Media's Silence"
+author: "Abigail Audlin and Alexander Burt"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r, include = FALSE}
+library(knitr)
+library(tidyverse)
+library(rtrends)
+library(ggplot2)
+library(readxl)
+Russia.Equipment <- read.csv("Russia Equipment.csv")
+Russia.Personnel<- read.csv("Russia Personnel.csv")
+Russia.Overall<- read.csv("Russia Overall.csv")
+Russia_Overall_2<- read_excel("Russia Overall 2.xlsx")
+
+
+```
+
+## Introduction
+  What Russian officials intended to be a swift victory has become an all-out war beginning February 24th. It is not surprising that since then, Russia’s President Vladimir Putin has done his best to isolate his country and censor the language used to talk about the invasion into Ukraine. Externally, Putin has blocked access to many foreign news outlets and social media platforms where the Russian government was not easily able to spread propaganda including Facebook, Instagram, Twitter, and TikTok(McMahon, 2022). However, Putin and his government have still allowed for YouTube and the encrypted messaging app know as Telegram to stay active, since they are two platforms that are used to heavily spread state propaganda but even their timeline in Russia is not guaranteed and it is up to Putin's discretion whether they get shut down in the future. To make matters even more sever, the Russian government has made it a crime to spread false information about the invasion with a penalty of up to 15 years in prison and they have criminalizes any public opposition or independent news reporting on the invasion of Ukraine(McMahon, 2022). This news meant that as of March 5th, when the law was passed, something as small as referring to the fighting going on in Ukraine as anything other than a “special military operation” in any social media post or news broad cast would be considered a crime(McMahon, 2022). Seeing as that is an incredibly heavy penalty for the practice of free speech a decision was made to look at this for the final project and analyze the first 281 days of the war to figure out what the actual cost of the war is for the Russian Armed forces including the losses of equipment and personnel. This information was then coupled with a through web-scraping and the use of google trends to see if there is a correlation between the total losses the Russian Armed forces took in any given day to the use of potentially illegal words such as “war” and “battle” in the Russian media on that same day to see if the loss of life and machines were a driving factor for the defiance of the Russian media.
+
+## Data
+  Before any of the analysis could be done it was imperative that the data being used for the Russian military was correct and updated daily. After carefully scouring through many different sites we were able to find data on Kaggle that was updated daily and included a battle damage assessment of Russian forces including personnel and multiple types of equipment. That data was then restructured so that instead of physical dates the data went from day one to day 281 so that it could be best analyzed and then bound together to create one dataset in R. We then moved on to web scraping to gather the information on estimates of the Russian army as a whole, what battles were occurring and how frequently they were fighting, and specific sentiments to their losses.
+
+```{r}
+Russia <-cbind(Russia.Equipment, Russia.Personnel)
+Russia
+summary(Russia)
+```
+## Results
+In pulling and cleaning up our data we see specific connections to social media and losses over time. With the consistent loss of forces, we can see that specific attitudes appear to change in Russia searches.
+
+### Data exploration
+The first start data exploration we looked at was Russian days by both personnel and tanks. In trying to explore this data we also needed to add specific variables to our data sets. To do this we created a TBP and PBD variable in order to be able to show changes or averages losses in per day. This was accomplished below.
+
+```{r}
+R1 <- qplot(Russia$day, Russia$personnel)
+R1
+R2 <- qplot(Russia$day, Russia$tank)
+R2
+
+qplot(Russia$day, Russia$personnel)+ xlab("Days") + ylab("Personnel")
+
+qplot(Russia$day, Russia$PBD)+ xlab("Days") + ylab("Deaths") 
+R4 <-lm(day ~ personnel, data = Russia)
+
+
+qplot(Russia$day, Russia$TPB)+ xlab("Days") + ylab("Tank Loss")
+```
+Next, we needed to get the overall totals of equipment for the Russian Armed Forces. We created a new data set and added the information for the the military from web scraping to the new data set.
+```{r}
+ggplot(Russia_Overall_2, aes(x=Type, y=Total)) + geom_col()
+
+
+library(rvest)
+html <- read_html("https://armedforces.eu/Russia#:~:text=Nowadays%2C%20similarly%20to%20United%20States%2C%20the%20Russians%20store,in%20case%20of%20Americans%2C%20namely%201600%20deployed%20warheads.")
+
+Cat <- html %>%
+  html_elements(".meter-text") %>%
+  html_text2()
+Cat
+```
+
+```{r}
+Total <- html %>%
+  html_elements(".meter-text-value") %>%
+  html_text2()
+Total
+
+Overall <- cbind(Cat, Total)
+Overall
+```
+Following these steps we needed to create a representation of what they lost in total from each category in order to compare. The code is listed below with further explanation in the analysis section.
+```{r}
+ggplot(Russia_Overall_2, aes(x=Type, y=D281)) + geom_col()
+```
+Next, we attempted to pull Google Trends data to find correlations to the data with possible searches. Listed below are a bunch of the searches we attempted prior to deciding to use Russian/Ukranian words instead, as the results were not coming back with enough significance. The words we finally decided on will be shown in the analysis section.
+
+```{r}
+library(gtrendsR)
+
+res <- gtrends(c("kia", "losing"), geo = "RU", time = "2022-02-25 2022-12-01")
+plot(res)
+res2 <- gtrends(c("russia loss", "war crimes"), geo = "RU", time = "2022-02-25 2022-12-01")
+plot(res2)
+res3 <- gtrends(c("retreat", "war crimes"), geo = "UA", time = "2022-02-25 2022-12-01")
+plot(res3)
+```
+```{r}
+res3 <- gtrends(c("retreat", "surrender"), geo = "RU", time = "2022-02-25 2022-12-01")
+plot(res3)
+
+res4 <- gtrends(c("ukraine", "ukraine deaths"), geo = "RU", time = "2022-02-25 2022-12-01")
+plot(res4)
+```
+
+
+### Analysis
+```{r}
+qplot(Russia$day, Russia$PBD)+ xlab("Days") + ylab("Deaths")
+
+qplot(Russia$day, Russia$TPB)+ xlab("Days") + ylab("Tank Loss")
+```
+In looking at these losses per day, we can see that there is little correlation between the two. We can see that in the personnel category (PBD) there does appear to be a stead rise over the last few weeks. However, both tanks and TPB appear to be random with no real way of determining any future possibilities.
+
+```{r}
+ggplot(Russia_Overall_2, aes(x=Type, y=Total)) + geom_col()
+
+ggplot(Russia_Overall_2, aes(x=Type, y=D281)) + geom_col()
+```
+When looking at both of these categories together there appears to be similar losses in each category based on the total number the Russian military has in each category. For example, artillery has a high number of losses but also has one of the highest totals to begin with. At this point in time it is unclear if this trend will continue, however, it is interesting to see that as it appears in the bar graphs each category is taking significant hits with regards to their overall totals.
+
+```{r}
+res <- gtrends(c("Voyna", "Konflikt"), geo = "RU", time = "2022-02-25 2022-12-01")
+plot(res)
+res2 <- gtrends(c("Voyna", "Konflikt"), geo = "UA", time = "2022-02-25 2022-12-01")
+plot(res2)
+```
+When we finally found two words that we felt provided a good understanding of a possible correlation, we settled on "Konflikt" (conflict) and "Voyna" (war). When analyzing the data we can see that there is little connection between Russia and Ukraine, however, when looking previously at our casualty data, we can see that the frequency in Russian searches for war increase as uptick in losses occurs. We also did some analysis to determine if anything was going on at the time where there is the highest spike (July) that could have caused the number of searches to rise. We found that in July there was a war crimes tribunal that was publicized and which could have lead to this increase. However, as we continue to look at the changes in RU, we can see that war is becoming more and more a topic of search, and it co-insides with the data showing continued losses. We cannot say confidently that there are not other factors at play creating this result. For example, Ukrainian forces are getting closer to the boarder and could be creating fear of an invasion that could lead to war. With that said, we are still confident in our results and Russian losses would have still lead to this fear of invasion.
+
+## Discussion
+
+Our results were rather unexpected to us. For example we had no idea Russia was loosing as many personnel as they were with an average of  about 320 Soldiers per day. We do believe that the rise in deaths and losses of equipment has caused the Russian population to become more susceptible to believing that this is already, or could very likely turn into an all out war despite what the Russian government is publicizing. We would have liked to use Twitter API to get exact sentiment, however, Russia's media blockade does not allow for specific posts with threats of capital punishment for "lies regarding Ukraine" so we were unable to even get to see if there was data. We also found it extremely interesting that the Russian forces have lost anywhere from 1/32 to 1/16 of their total inventoried equipment over a span of just 281 day. To show a comparison of how many troops they lost in the first 281 days, we looked at U.S. deaths in combat in previous wars. We were shocked to find out that Russia has lost more soldiers in the first 281 days then all U.S. deaths from conflicts since 1955, to include the Vietnam War. As a group, we did run into issues with Google trends. We looked up and found out that Google is the top search engine in Russia, but was also going down in popularity as the war continued. It appears Russian citizens began to use a Russian based search engine more frequently as time went on. Unfortunately, we could not get access to this API or any data involving it. We did attempt to get access to a sentiment analysis API known as GDELT. This site covers news stories and even combs through newspapers to get data for sentiment analysis. However, because the pull we were asking for was so large, we have still not heard back from them.
+
+
+
+
+## References
+https://www.kaggle.com/datasets/piterfm/2022-ukraine-russian-war
+https://en.wikipedia.org/wiki/United_States_military_casualties_of_war
+https://armedforces.eu/Russia#:~:text=Nowadays%2C%20similarly%20to%20United%20States%2C%20the%20Russians%20store,in%20case%20of%20Americans%2C%20namely%201600%20deployed%20warheads.
+https://www.cfr.org/in-brief/russia-censoring-news-war-ukraine-foreign-media-are-trying-get-around
